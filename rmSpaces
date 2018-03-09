@@ -1,0 +1,313 @@
+#!/bin/bash
+
+set +o noclobber
+cmdName=`basename "$0"`
+
+cleanup() {
+    /bin/rm /tmp/tmp.$cmdName.*.$$ > /dev/null 2>&1
+    /bin/rm /tmp/tmp.$cmdName.$$ > /dev/null 2>&1
+    exit 0
+}
+
+trap cleanup INT
+
+usageExit() {
+    echo "Usage: $1 [-h | --help] [OPTIONS]"
+    if [ "$2" = help ]; then
+        cat - <<EOF1
+
+$cmdName is a util to help remove spaces from filenames. $cmdName operates on files
+in the current working directory (and/or below).
+
+Options:
+ -h, --help          Display this help and exit
+ -r, --recursive     Remove spaces from filenames from the current working
+                     directory and down into subdirectories (not default)
+ -d, --directories   Only remove spaces from directory names
+ -f, --regularFiles  Only remove spaces from regular files (and links)
+ -x, --execute       Make the changes on the fly
+ -q, --removeQuotes  Also strip '\`? and " characters.
+ -c, --camelCase     Converts words to camel case when possible (not default).
+
+$cmdName takes spaces out of filenames while maintaining filename readability.
+It removes trailing and leading spaces, removes spaces after or before dots (.),
+plusses (+) etc.  It removes a space when subsequent words would result in a
+'camel cased' name construct (eg. aaaBbbCcc).  When $cmdName can not remove a
+space, i.e.; readability would suffer, $cmdName replaces the space with
+an underscore (_).
+
+$cmdName creates the following executable files in the current working directory:
+
+ - .rename.files.$cmdName
+     Run this to rename regular files (must run before directories below).
+     (not necessary with -x option).
+ - .undo.files.$cmdName
+     Run this to undo the above changes
+ - .failed.files.$cmdName
+     List of renames that would have failed due to name conflict
+     (hand edit to taste then run it).
+
+ - .rename.dirs.$cmdName
+     Run this to rename directories (must run after changing names on regular files
+     with the .rename.files.$cmdName script).  (not necessary with -x option).
+ - .undo.dirs.$cmdName
+     Run this to undo the above changes
+ - .failed.dirs.$cmdName
+     List of renames that would have failed due to name conflict
+     (hand edit to taste then run it).
+
+EOF1
+    fi
+    exit 1
+}
+
+findOptions="-maxdepth 1"
+OPT_RECURSIVE=false
+OPT_DO_DIRECTORIES=true
+OPT_DO_REGFILES=true
+OPT_EXECUTE=false
+OPT_CAMELCASE=false
+OPT_REMOVE_QUOTES=false
+
+while :
+do
+    case "$1" in
+        -h|--help) usageExit $cmdName help
+        ;;
+
+        -r|--recursive) findOptions=""
+            OPT_RECURSIVE=true
+	    shift
+        ;;
+
+        -d|--directories) OPT_DO_DIRECTORIES=true
+            OPT_DO_REGFILES=false
+	    shift
+        ;;
+
+        -f|--regularFiles) OPT_DO_REGFILES=true
+            OPT_DO_DIRECTORIES=false
+	    shift
+        ;;
+
+        -x|--execute) OPT_EXECUTE=true
+	    shift
+        ;;
+
+        -c|--camelCase) OPT_CAMELCASE=true
+	    shift
+        ;;
+
+        -q|--removeQuotes) OPT_REMOVE_QUOTES=true
+	    shift
+        ;;
+
+        -*) echo "$cmdName: ERROR: Invalid option '$1'."
+             usageExit $cmdName
+        ;;
+
+        *) break # We're done processing arguments, so let's get on with it.
+    esac
+done
+
+echo '#!/bin/bash' > /tmp/tmp.$cmdName.empty.$$
+echo '' >> /tmp/tmp.$cmdName.empty.$$
+
+# Make a sed script that removes spaces.
+# First line needs to be this echo command so that we can reliably
+# generate a tab character. (i.e.; Safe from someone doing tabs2spaces
+# on this script).
+# 
+echo -n > /tmp/tmp.$cmdName.sed.script.$$
+if [ "$OPT_REMOVE_QUOTES" = true ] ; then
+cat <<EOF2a >> /tmp/tmp.$cmdName.sed.script.$$
+s/\\([a-zA-Z]\\)'s/\\1s/g
+s/\\([A-Z]\\)'S/\\1S/g
+s/['\`"]/ /g
+s/?//g
+EOF2a
+fi
+echo -e '1,$ s/[ \t][ \t]*/ /g' >> /tmp/tmp.$cmdName.sed.script.$$
+cat <<EOF2b >> /tmp/tmp.$cmdName.sed.script.$$
+s/  *$//
+s/^  *//
+s/\\([!-.:-?\\[-\`]\\) /\\1/g
+s/ \\([!-.:-?\\[-\`]\\)/\\1/g
+s/ \\([vV]\\)\\([0-9]\\)/_\\1\\2/g
+s/\\([A-Z]\\) \\([a-zA-Z]\\)/\\1_\\2/g
+s/\\([a-z]\\) \\([A-Z]\\)/\\1\\2/g
+s/\\([a-zA-Z]\\) \\([0-9]\\)/\\1\\2/g
+s/\\([0-9]\\) \\([a-zA-Z]\\)/\\1\\2/g
+s/\\([0-9]\\) \\(0-9]\\)/\\1_\\2/g
+EOF2b
+if [ "$OPT_CAMELCASE" = true ] ; then
+cat <<EOF2c >> /tmp/tmp.$cmdName.sed.script.$$
+s/\\([a-z]\\) a\\([a-z]\\)/\\1A\\2/g
+s/\\([a-z]\\) b\\([a-z]\\)/\\1B\\2/g
+s/\\([a-z]\\) c\\([a-z]\\)/\\1C\\2/g
+s/\\([a-z]\\) d\\([a-z]\\)/\\1D\\2/g
+s/\\([a-z]\\) e\\([a-z]\\)/\\1E\\2/g
+s/\\([a-z]\\) f\\([a-z]\\)/\\1F\\2/g
+s/\\([a-z]\\) g\\([a-z]\\)/\\1G\\2/g
+s/\\([a-z]\\) h\\([a-z]\\)/\\1H\\2/g
+s/\\([a-z]\\) i\\([a-z]\\)/\\1I\\2/g
+s/\\([a-z]\\) j\\([a-z]\\)/\\1J\\2/g
+s/\\([a-z]\\) k\\([a-z]\\)/\\1K\\2/g
+s/\\([a-z]\\) l\\([a-z]\\)/\\1L\\2/g
+s/\\([a-z]\\) m\\([a-z]\\)/\\1M\\2/g
+s/\\([a-z]\\) n\\([a-z]\\)/\\1N\\2/g
+s/\\([a-z]\\) o\\([a-z]\\)/\\1O\\2/g
+s/\\([a-z]\\) p\\([a-z]\\)/\\1P\\2/g
+s/\\([a-z]\\) q\\([a-z]\\)/\\1Q\\2/g
+s/\\([a-z]\\) r\\([a-z]\\)/\\1R\\2/g
+s/\\([a-z]\\) s\\([a-z]\\)/\\1S\\2/g
+s/\\([a-z]\\) t\\([a-z]\\)/\\1T\\2/g
+s/\\([a-z]\\) u\\([a-z]\\)/\\1U\\2/g
+s/\\([a-z]\\) v\\([a-z]\\)/\\1V\\2/g
+s/\\([a-z]\\) w\\([a-z]\\)/\\1W\\2/g
+s/\\([a-z]\\) x\\([a-z]\\)/\\1X\\2/g
+s/\\([a-z]\\) y\\([a-z]\\)/\\1Y\\2/g
+s/\\([a-z]\\) z\\([a-z]\\)/\\1Z\\2/g
+EOF2c
+fi
+cat <<EOF2d >> /tmp/tmp.$cmdName.sed.script.$$
+s/ /_/g
+EOF2d
+
+# Make a shell script that gets executed by "find" as it walks the tree.
+cat <<EOF3 > /tmp/tmp.$cmdName.$$
+#!/bin/bash
+
+    renameCmds=\$2/.rename.\$3.$cmdName
+    failedCmds=\$2/.failed.\$3.$cmdName
+    undoCmds=\$2/.undo.\$3.$cmdName
+
+    bName=\`basename "\$1"\`
+    dName=\`dirname  "\$1"\`
+
+    safe_dName=\`echo "\$dName" | sed -e "s/'/'\"'\"'/g"\`
+    safe_bName=\`echo "\$bName" | sed -e "s/'/'\"'\"'/g"\`
+    safe_srcName="\$safe_dName/\$safe_bName"
+
+    dest_bName=\`echo "\$bName" | sed -f /tmp/tmp.$cmdName.sed.script.$$\`
+    destName="\$dName/\$dest_bName"
+
+    safe_dest_bName=\`echo "\$dest_bName" | sed -e "s/'/'\"'\"'/g"\`
+    safe_destName="\$safe_dName/\$safe_dest_bName"
+
+    if [ -e "\$destName" ]; then
+        echo mv \\'"\$safe_srcName"\\' \\'"\$safe_destName"\\' >> \$failedCmds
+        >&2 echo $cmdName: Warning: check .failed.\$3.$cmdName - name collision with \$destName
+    else
+        if [ "$OPT_EXECUTE" = true ] ; then
+            mv "\$1" "\$destName"
+        else
+            echo mv \\'"\$safe_srcName"\\' \\'"\$safe_destName"\\' >> \$renameCmds
+        fi
+        echo mv \\'"\$safe_destName"\\' \\'"\$safe_srcName"\\' >> \$undoCmds
+    fi
+EOF3
+chmod 755 /tmp/tmp.$cmdName.$$
+
+### Create the move commands into the following execuatble scripts.
+
+if [ "$OPT_DO_REGFILES" = true ] ; then
+
+    echo '#!/bin/bash' > .rename.files.$cmdName
+    cp /dev/null .undo.files.$cmdName
+    echo '#!/bin/bash' > .failed.files.$cmdName
+
+    find . $findOptions -name '* *' \( -type f -o -type l \) -exec /tmp/tmp.$cmdName.$$ {} `pwd` files \;
+    # Following is better than above - buggy in bash for the moment, need to debug this...
+    # if [ "$OPT_REMOVE_QUOTES" = true ] ; then
+            # -name '*`*' -or \
+        # find . $findOptions \
+            # \( -name '* *' -or -name '*?*' -or -name '*\'*' -or -name '*\\*' -or -name '*"*' \) \
+            # \( -type f -o -type l \) \
+            # -exec /tmp/tmp.$cmdName.$$ {} `pwd` files \;
+    # else
+        # find . $findOptions -name '* *' \( -type f -o -type l \) -exec /tmp/tmp.$cmdName.$$ {} `pwd` files \;
+    # fi
+
+    echo '' >> .rename.files.$cmdName
+    echo '#!/bin/bash' >> .undo.files.$cmdName
+    echo '' >> .failed.files.$cmdName
+    tac .undo.files.$cmdName > /tmp/tmp.$cmdName.tac.$$ /bin/mv /tmp/tmp.$cmdName.tac.$$ .undo.files.$cmdName > /dev/null 2>&1
+    echo '' >> .undo.files.$cmdName
+
+    chmod +x .*.$cmdName
+
+    cmp --quiet /tmp/tmp.$cmdName.empty.$$ .rename.files.$cmdName
+    if [ $? -eq 0 ]; then
+        /bin/rm .rename.files.$cmdName > /dev/null 2>&1
+    fi
+
+    cmp --quiet /tmp/tmp.$cmdName.empty.$$ .undo.files.$cmdName
+    if [ $? -eq 0 ]; then
+        /bin/rm .undo.files.$cmdName > /dev/null 2>&1
+    fi
+
+    cmp --quiet /tmp/tmp.$cmdName.empty.$$ .failed.files.$cmdName
+    if [ $? -eq 0 ]; then
+        /bin/rm .failed.files.$cmdName > /dev/null 2>&1
+    fi
+fi
+
+### Rename directories.
+
+if [ "$OPT_DO_DIRECTORIES" = true ] ; then
+
+    # /bin/rm .rename.dirs.$cmdName > /dev/null 2>&1
+    # /bin/rm .undo.dirs.$cmdName > /dev/null 2>&1
+    # /bin/rm .failed.dirs.$cmdName > /dev/null 2>&1
+
+    # Prep some files to start dumping commands into.
+    #
+    echo '#!/bin/bash' > .rename.dirs.$cmdName
+    cp /dev/null .undo.dirs.$cmdName
+    echo '#!/bin/bash' > .failed.dirs.$cmdName
+
+    # Find depth of tree - we need to rename directories starting out at
+    # the leaves of the directory tree structure.
+    #
+    if [ "$OPT_RECURSIVE" = true ] ; then
+        treeDepth=`find . -type d -printf "%d\n" | sort -n -r | head -n 1`
+    else
+        treeDepth=1
+    fi
+
+    while [ $treeDepth -gt 0 ]
+    do
+        # echo "# Depth $treeDepth" >> .rename.dirs.$cmdName
+        # echo "# End of Depth $treeDepth" >> .undo.dirs.$cmdName
+        find . -maxdepth $treeDepth -mindepth $treeDepth -name '* *' -type d -exec /tmp/tmp.$cmdName.$$ {} `pwd` dirs \;
+        treeDepth=$(expr $treeDepth - 1)
+    done
+
+    echo '' >> .rename.dirs.$cmdName
+    echo '#!/bin/bash' >> .undo.dirs.$cmdName
+    echo '' >> .failed.dirs.$cmdName
+
+    tac .undo.dirs.$cmdName > /tmp/tmp.$cmdName.tac.$$
+    /bin/mv /tmp/tmp.$cmdName.tac.$$ .undo.dirs.$cmdName > /dev/null 2>&1
+    echo '' >> .undo.dirs.$cmdName
+
+    chmod +x .*.$cmdName
+
+    cmp --quiet /tmp/tmp.$cmdName.empty.$$ .rename.dirs.$cmdName
+    if [ $? -eq 0 ]; then
+        /bin/rm .rename.dirs.$cmdName > /dev/null 2>&1
+    fi
+
+    cmp --quiet /tmp/tmp.$cmdName.empty.$$ .undo.dirs.$cmdName
+    if [ $? -eq 0 ]; then
+        /bin/rm .undo.dirs.$cmdName > /dev/null 2>&1
+    fi
+
+    cmp --quiet /tmp/tmp.$cmdName.empty.$$ .failed.dirs.$cmdName
+    if [ $? -eq 0 ]; then
+        /bin/rm .failed.dirs.$cmdName > /dev/null 2>&1
+    fi
+fi
+
+cleanup
