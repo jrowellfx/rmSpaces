@@ -44,6 +44,10 @@ cleanup() {
     exit 0
 }
 
+tac() {
+    perl -e "print reverse(<>)" "$@"
+}
+
 trap cleanup INT
 
 usageExit() {
