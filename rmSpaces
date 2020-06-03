@@ -213,6 +213,9 @@ EOF2c
 fi
 cat <<EOF2d >> /tmp/tmp.$cmdName.sed.script.$$
 s/ /_/g
+s/_-_/-/g
+s/_-/-/g
+s/-_/-/g
 EOF2d
 
 # Make a shell script that gets executed by "find" as it walks the tree.
