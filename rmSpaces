@@ -66,7 +66,7 @@ Options:
  -d, --directories   Only remove spaces from directory names
  -f, --regularFiles  Only remove spaces from regular files (and links)
  -x, --execute       Make the changes on the fly
- -q, --removeQuotes  Also strip '\`? and " characters.
+ -q, --removeQuotes  Also strip '\`?"[](){} characters.
  -c, --camelCase     Converts words to camel case when possible (not default).
 
 $cmdName takes spaces out of filenames while maintaining filename readability.
@@ -163,7 +163,9 @@ if [ "$OPT_REMOVE_QUOTES" = true ] ; then
 cat <<EOF2a >> /tmp/tmp.$cmdName.sed.script.$$
 s/\\([a-zA-Z]\\)'s/\\1s/g
 s/\\([A-Z]\\)'S/\\1S/g
-s/['\`"]/ /g
+s/\\[/ /g
+s/\\]/ /g
+s/[\\(\\){}'\`"]/ /g
 s/?//g
 EOF2a
 fi
@@ -262,17 +264,22 @@ if [ "$OPT_DO_REGFILES" = true ] ; then
     cp /dev/null .undo.files.$cmdName
     echo '#!/bin/bash' > .failed.files.$cmdName
 
-    find . $findOptions -name '* *' \( -type f -o -type l \) -exec /tmp/tmp.$cmdName.$$ {} `pwd` files \;
-    # Following is better than above - buggy in bash for the moment, need to debug this...
-    # if [ "$OPT_REMOVE_QUOTES" = true ] ; then
-            # -name '*`*' -or \
-        # find . $findOptions \
-            # \( -name '* *' -or -name '*?*' -or -name '*\'*' -or -name '*\\*' -or -name '*"*' \) \
-            # \( -type f -o -type l \) \
-            # -exec /tmp/tmp.$cmdName.$$ {} `pwd` files \;
-    # else
-        # find . $findOptions -name '* *' \( -type f -o -type l \) -exec /tmp/tmp.$cmdName.$$ {} `pwd` files \;
-    # fi
+    ### find . $findOptions -name '* *' \( -type f -o -type l \) -exec /tmp/tmp.$cmdName.$$ {} `pwd` files \;
+
+    # Following is better than above.
+    #
+    if [ "$OPT_REMOVE_QUOTES" = true ] ; then
+        find . $findOptions \
+            \( -name '* *' \
+                -or -name '*\[*' -or -name '*\]*' \
+                -or -name '*(*' -or -name '*)*' \
+                -or -name '*{*' -or -name '*}*' \
+                -or -name "*'*" \
+                -or -name '*"*' \) \
+            -exec /tmp/tmp.$cmdName.$$ {} `pwd` files \;
+    else
+        find . $findOptions -name '* *' \( -type f -o -type l \) -exec /tmp/tmp.$cmdName.$$ {} `pwd` files \;
+    fi
 
     echo '' >> .rename.files.$cmdName
     echo '#!/bin/bash' >> .undo.files.$cmdName
@@ -325,6 +332,7 @@ if [ "$OPT_DO_DIRECTORIES" = true ] ; then
     do
         # echo "# Depth $treeDepth" >> .rename.dirs.$cmdName
         # echo "# End of Depth $treeDepth" >> .undo.dirs.$cmdName
+        ### JPR - Add fix to remove quotes like for reg files above. TBD next line vvv
         find . -maxdepth $treeDepth -mindepth $treeDepth -name '* *' -type d -exec /tmp/tmp.$cmdName.$$ {} `pwd` dirs \;
         treeDepth=$(expr $treeDepth - 1)
     done
