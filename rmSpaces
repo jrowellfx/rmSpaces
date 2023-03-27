@@ -288,7 +288,8 @@ if [ "$OPT_DO_REGFILES" = true ] ; then
     echo '' >> .rename.files.$cmdName
     echo '#!/bin/bash' >> .undo.files.$cmdName
     echo '' >> .failed.files.$cmdName
-    tac .undo.files.$cmdName > /tmp/tmp.$cmdName.tac.$$ /bin/mv /tmp/tmp.$cmdName.tac.$$ .undo.files.$cmdName > /dev/null 2>&1
+    tac .undo.files.$cmdName > /tmp/tmp.$cmdName.tac.$$
+    /bin/mv /tmp/tmp.$cmdName.tac.$$ .undo.files.$cmdName > /dev/null 2>&1
     echo '' >> .undo.files.$cmdName
 
     chmod +x .*.$cmdName
