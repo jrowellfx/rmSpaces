@@ -71,10 +71,11 @@ Options:
 
 $cmdName takes spaces out of filenames while maintaining filename readability.
 It removes trailing and leading spaces, removes spaces after or before dots (.),
-plusses (+) etc.  It removes a space when subsequent words would result in a
-'camel cased' name construct (eg. aaaBbbCcc).  When $cmdName can not remove a
-space, i.e.; readability would suffer, $cmdName replaces the space with
-an underscore (_).
+plusses (+) etc.
+
+$cmdName then replaces all spaces with underscores (_) unless --camelCase is
+specified, in which case words are converted to 'camel case" unless readability
+would suffer.
 
 $cmdName creates the following executable files in the current working directory:
 
@@ -156,9 +157,11 @@ echo '' >> /tmp/tmp.$cmdName.empty.$$
 # Make a sed script that removes spaces.
 # First line needs to be this echo command so that we can reliably
 # generate a tab character. (i.e.; Safe from someone doing tabs2spaces
-# on this script).
+# on this script). [23/03'27 - jpr - I have no recollection of the
+# purpose of this echo command.]
 #
 echo -n > /tmp/tmp.$cmdName.sed.script.$$
+
 if [ "$OPT_REMOVE_QUOTES" = true ] ; then
 cat <<EOF2a >> /tmp/tmp.$cmdName.sed.script.$$
 s/\\([a-zA-Z]\\)'s/\\1s/g
@@ -173,6 +176,7 @@ echo -e '1,$ s/[ \t][ \t]*/ /g' >> /tmp/tmp.$cmdName.sed.script.$$
 cat <<EOF2b >> /tmp/tmp.$cmdName.sed.script.$$
 s/  *$//
 s/^  *//
+s/  */ /
 s/\\([!-.:-?\\[-\`]\\) /\\1/g
 s/ \\([!-.:-?\\[-\`]\\)/\\1/g
 s/ \\([vV]\\)\\([0-9]\\)/_\\1\\2/g
