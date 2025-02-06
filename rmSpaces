@@ -2,7 +2,7 @@
 
 # 3-Clause BSD License
 # 
-# Copyright (c) 2008-2022, James Philip Rowell,
+# Copyright (c) 2008-2025, James Philip Rowell,
 # Alpha Eleven Incorporated
 # www.alpha-eleven.com
 # All rights reserved.
@@ -36,7 +36,7 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-VERSION=1.0.0
+VERSION=2.0.0
 
 set +o noclobber
 cmdName=`basename "$0"`
@@ -54,7 +54,7 @@ tac() {
 trap cleanup INT
 
 usageExit() {
-    echo "Usage: $1 [-h | --help] [OPTIONS]"
+    echo "usage: $1 [-h | --help] [OPTIONS]"
     if [ "$2" = help ]; then
         cat - <<EOF1
 
@@ -62,24 +62,24 @@ $cmdName is a util to help remove spaces from filenames. $cmdName operates on fi
 in the current working directory (and/or below).
 
 Options:
- -h, --help          display this help and exit
- -r, --recursive     remove spaces from filenames from the current working
-                       directory and down into subdirectories (not default)
- -d, --directories   only remove spaces from directory names
- -f, --regularFiles  only remove spaces from regular files (and links)
- -x, --execute       make the changes on the fly
- -q, --removeQuotes  also strip '\`?"[](){} characters.
- -c, --camelCase     converts words to camel case when possible (not default).
- --dates             replaces spaces before or after dates (eg 2023-03-27) with
-                       underscores. (default)
- --noDates           don't try to match dates in filenames as in --dates.
- --version           print out the version number and exit
+ -h, --help           display this help and exit
+ -r, --recursive      remove spaces from filenames from the current working
+                        directory and down into subdirectories (not default)
+ -d, --directories    only remove spaces from directory names
+ -f, --regular-files  only remove spaces from regular files (and links)
+ -x, --execute        make the changes on the fly
+ -q, --remove-quotes  also strip '\`?"[](){} characters.
+ -c, --camel-case     converts words to camel case when possible (not default).
+ --dates              replaces spaces before or after dates (eg 2023-03-27) with
+                        underscores. (default)
+ --noDates            don't try to match dates in filenames as in --dates.
+ --version            print out the version number and exit
 
 $cmdName takes spaces out of filenames while maintaining filename readability.
 It removes trailing and leading spaces, removes spaces after or before dots (.),
 plusses (+) etc.
 
-$cmdName then replaces all spaces with underscores (_) unless --camelCase is
+$cmdName then replaces all spaces with underscores (_) unless --camel-case is
 specified, in which case words are converted to 'camel case" unless readability
 would suffer.
 
@@ -137,7 +137,7 @@ do
             shift
         ;;
 
-        -f|--regularFiles) OPT_DO_REGFILES=true
+        -f|--regular-files) OPT_DO_REGFILES=true
             OPT_DO_DIRECTORIES=false
             shift
         ;;
@@ -146,11 +146,11 @@ do
             shift
         ;;
 
-        -c|--camelCase) OPT_CAMELCASE=true
+        -c|--camel-case) OPT_CAMELCASE=true
             shift
         ;;
 
-        -q|--removeQuotes) OPT_REMOVE_QUOTES=true
+        -q|--remove-quotes) OPT_REMOVE_QUOTES=true
             shift
         ;;
 
