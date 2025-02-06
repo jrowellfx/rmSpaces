@@ -5,7 +5,7 @@ import os
 import shutil
 
 setup(name='rmSpaces',
-      version='1.010',
+      version='2.0.0',
       description='Script to walk tree and remove spaces from filenames.',
       long_description='',
       author='James Philip Rowell',
