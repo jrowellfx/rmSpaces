@@ -1,4 +1,4 @@
-#!/usr/bin/python2.7
+#!/usr/bin/env python3
 
 from distutils.core import setup
 import os
@@ -10,8 +10,8 @@ setup(name='rmSpaces',
       long_description='',
       author='James Philip Rowell',
       author_email='james@alpha-eleven.com',
-      url='http://www.alpha-eleven.com/',
+      url='https://github.com/jrowellfx/rmSpaces',
       py_modules=[],
       scripts=['rm-spaces'],
       license = "BSD 3-Clause license",
-     )
+    )
