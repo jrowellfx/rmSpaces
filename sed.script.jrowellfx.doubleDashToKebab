@@ -70,3 +70,6 @@
 /lsseq/ s/\([^-]\)-G$/\1--skip-bad-padding/g
 /lsseq/ s/\([^-]\)-g\([ \t]\)/\1--show-bad-padding\2/g
 /lsseq/ s/\([^-]\)-G\([ \t]\)/\1--skip-bad-padding\2/g
+
+# Plus one other possibly useful replacement.
+1,$ s/\<rmSpaces\>/rm-spaces/g

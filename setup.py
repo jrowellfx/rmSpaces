@@ -12,6 +12,6 @@ setup(name='rmSpaces',
       author_email='james@alpha-eleven.com',
       url='http://www.alpha-eleven.com/',
       py_modules=[],
-      scripts=['rmSpaces'],
+      scripts=['rm-spaces'],
       license = "BSD 3-Clause license",
      )
