@@ -77,7 +77,7 @@ Options:
 
 $cmdName takes spaces out of filenames while maintaining filename readability.
 It removes trailing and leading spaces, removes spaces after or before dots (.),
-plusses (+) etc.
+pluses (+) etc.
 
 $cmdName then replaces all spaces with underscores (_) unless --camel-case is
 specified, in which case words are converted to 'camel case" unless readability
