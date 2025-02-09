@@ -1,4 +1,0 @@
-1,$ s/\<rmSpaces\>/rm-spaces/g
-1,$ s/--regularFiles/--regular-files/g
-1,$ s/--removeQuotes/--remove-quotes/g
-1,$ s/--camelCase/--camel-case/g
